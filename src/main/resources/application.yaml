@@ -6,15 +6,21 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 50
+  batch:
+    job:
+      name: ${JOB_NAME}
+      enabled: true
+    jdbc:
+      initialize-schema: always
   jpa:
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
-        auto_quote_keyword: true
-        highlight_sql: true
-        show_sql: true
-        format_sql: true
+        auto_quote_keyword: false
+        highlight_sql: false
+        show_sql: false
+        format_sql: false
   config:
     import: optional:file:.env[.properties]
   servlet:
@@ -34,9 +40,9 @@ spring:
           timeout: 5000
           starttls:
             enable: true
-logging:
-  level:
-    org.hibernate.orm.jdbc.bind: trace
+#logging:
+#  level:
+#    org.hibernate.orm.jdbc.bind: trace
 
 payment:
   kakao:
