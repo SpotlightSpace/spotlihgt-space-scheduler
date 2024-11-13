@@ -22,4 +22,6 @@ public interface PointRepository extends JpaRepository<Point, Long>, PointQueryR
         return findByUser(user)
                 .orElseThrow(() -> new ApplicationException(POINT_NOT_FOUND));
     }
+
+    Point findByUserId(Long id);
 }
