@@ -10,17 +10,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.stereotype.Service;
 
 @Entity
 @Table(name = "users")
 @Getter
 @Service
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
 
@@ -53,4 +53,18 @@ public class User {
 
     private boolean isDeleted = false;
     private boolean isSocialLogin;
+    private String location;
+
+    private User(
+            Long id
+    ) {
+        this.id = id;
+    }
+
+    public static User of(
+            Long id
+    ) {
+        return new User(id);
+    }
+
 }

@@ -1,20 +1,19 @@
 package com.sparta.spotlightspacescheduler.core.calculation.service;
 
-import static com.sparta.spotlightspacescheduler.core.payment.domain.PaymentStatus.APPROVED;
-
 import com.sparta.spotlightspacescheduler.core.calculation.domain.Calculation;
 import com.sparta.spotlightspacescheduler.core.calculation.dto.CalculationProcessResponseDto;
 import com.sparta.spotlightspacescheduler.core.calculation.repository.CalculationRepository;
 import com.sparta.spotlightspacescheduler.core.event.domain.Event;
+import com.sparta.spotlightspacescheduler.core.event.repository.EventRepository;
 import com.sparta.spotlightspacescheduler.core.payment.domain.Payment;
-import com.sparta.spotlightspacescheduler.core.payment.repository.PaymentRepository;
+import com.sparta.spotlightspacescheduler.core.payment.domain.PaymentStatus;
 import com.sparta.spotlightspacescheduler.core.point.point.domain.Point;
 import com.sparta.spotlightspacescheduler.core.point.point.repository.PointRepository;
 import com.sparta.spotlightspacescheduler.core.user.domain.User;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -28,26 +27,25 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.data.RepositoryItemReader;
-import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
+import org.springframework.batch.item.database.JdbcPagingItemReader;
+import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.TransientDataAccessException;
-import org.springframework.data.domain.Sort;
 import org.springframework.retry.RetryPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.transaction.PlatformTransactionManager;
 
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
-@Slf4j
 public class CalculationBatch {
 
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     private final CalculationRepository calculationRepository;
-    private final PaymentRepository paymentRepository;
     private final PointRepository pointRepository;
+    private final EventRepository eventRepository;
 
     //배치의 실행 단위
     //정산 배치
@@ -66,12 +64,12 @@ public class CalculationBatch {
     @Bean
     @JobScope
     public Step calculationStep(
-            RepositoryItemReader<Payment> paymentReader,
+            JdbcPagingItemReader<Payment> paymentReader,
             ItemProcessor paymentProcessor,
             ItemWriter paymentWriter
     ) {
         return new StepBuilder("calculationStep", jobRepository)
-                .<Payment, Payment>chunk(20000, transactionManager)
+                .<Payment, Payment>chunk(30, transactionManager)
                 .reader(paymentReader)
                 .processor(paymentProcessor)
                 .writer(paymentWriter)
@@ -83,23 +81,47 @@ public class CalculationBatch {
     // db에서 데이터를 읽어오며 porccesor로 전달.
     @Bean
     @StepScope
-    public RepositoryItemReader<Payment> paymentReader() {
+    public JdbcPagingItemReader<Payment> paymentReader(DataSource dataSource) {
+        JdbcPagingItemReader<Payment> reader = new JdbcPagingItemReader<>();
+        reader.setDataSource(dataSource);
+        reader.setPageSize(30);
+        reader.setRowMapper(new PaymentRowMapper());
 
-        LocalDateTime now = LocalDateTime.now()
-                .withDayOfMonth(1)
-                .withHour(0)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0);
+        SqlPagingQueryProviderFactoryBean queryProvider = new SqlPagingQueryProviderFactoryBean();
+        queryProvider.setDataSource(dataSource);
+        queryProvider.setSelectClause(
+                "SELECT p.payment_id, p.tid, p.cid, p.original_amount, " +
+                        "e.event_id, e.start_at, e.end_at, e.price, e.recruitment_start_at, "
+                        + "e.recruitment_finish_at, e.is_deleted AS event_is_deleted, e.is_calculated, "
+                        + "u.user_id AS user_id"
+        );
 
-        return new RepositoryItemReaderBuilder<Payment>()
-                .name("paymentReader")
-                .repository(paymentRepository)
-                .methodName("findPaymentsForCalculation1")
-                .arguments(APPROVED, now.minusMonths(1), now)
-                .sorts(Collections.singletonMap("id", Sort.Direction.ASC))
-                .pageSize(10000)
-                .build();
+        queryProvider.setFromClause("FROM payments p " +
+                "JOIN events e ON p.event_id = e.event_id " +
+                "JOIN users u ON e.user_id = u.user_id ");
+
+        queryProvider.setWhereClause(
+                "WHERE p.status = :status " +
+                        "AND :startInclusive <= e.end_at " +
+                        "AND e.end_at < :endExclusive " +
+                        "AND e.is_deleted = false");
+
+        queryProvider.setSortKey("p.payment_id");
+
+        try {
+            reader.setQueryProvider(queryProvider.getObject());
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to initialize JdbcPagingItemReader", e);
+        }
+
+        Map<String, Object> parameterValues = new HashMap<>();
+        parameterValues.put("status", PaymentStatus.APPROVED.toString());
+        parameterValues.put("startInclusive", LocalDateTime.now().minusMonths(1));
+        parameterValues.put("endExclusive", LocalDateTime.now());
+        reader.setParameterValues(parameterValues);
+
+        return reader;
     }
 
     // 프로세서는 가공하는 역할을 수행함
@@ -137,6 +159,7 @@ public class CalculationBatch {
                     calculationRepository.save(calculation);
 
                     pointRepository.save(point);
+                    eventRepository.save(event);
                 }
             }
         };

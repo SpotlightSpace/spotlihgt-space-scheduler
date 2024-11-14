@@ -20,7 +20,6 @@ import com.sparta.spotlightspacescheduler.core.point.point.repository.PointRepos
 import com.sparta.spotlightspacescheduler.core.pointhistory.domain.PointHistory;
 import com.sparta.spotlightspacescheduler.core.pointhistory.repository.PointHistoryRepository;
 import com.sparta.spotlightspacescheduler.core.ticket.service.TicketService;
-import com.sparta.spotlightspacescheduler.core.user.domain.User;
 import com.sparta.spotlightspacescheduler.core.user.repository.UserRepository;
 import com.sparta.spotlightspacescheduler.core.usercoupon.domain.UserCoupon;
 import com.sparta.spotlightspacescheduler.core.usercoupon.repository.UserCouponRepository;
@@ -62,46 +61,6 @@ public class PaymentService {
 
     public Page<PaymentResponseDto> getPayments(long userId, PageRequest pageRequest) {
         return paymentRepository.findAllByUserId(userId, pageRequest).map(PaymentResponseDto::from);
-    }
-
-    public long createPayment(long userId, long eventId, String cid, Long couponId, Integer pointAmount) {
-        User user = userRepository.findByIdOrElseThrow(userId);
-        Event event = eventRepository.findByIdOrElseThrow(eventId);
-        EventTicketStock eventTicketStock = eventTicketStockRepository
-                .findByEventIdWithPessimisticLockOrElseThrow(event.getId());
-
-        validateRecruitmentPeriod(event);
-        validateEventTicketStock(eventTicketStock);
-
-        eventTicketStock.decreaseStock();
-
-        UserCoupon userCoupon = null;
-        pointAmount = pointAmount == null ? 0 : pointAmount;
-        int discountedPrice = event.getPrice();
-        if (doesCouponIdExist(couponId)) {
-            userCoupon = userCouponRepository.findByCouponIdAndUserIdOrElseThrow(couponId, user.getId());
-            validateUserCoupon(userCoupon);
-            discountedPrice -= userCoupon.getDiscountAmount();
-        }
-        Point point = pointRepository.findByUserOrElseThrow(user);
-        if (doesPointAmountExist(pointAmount)) {
-            validatePoint(point, pointAmount);
-            discountedPrice -= pointAmount;
-        }
-
-        Payment payment = Payment.create(
-                cid,
-                event,
-                user,
-                event.getPrice(),
-                discountedPrice,
-                userCoupon,
-                point,
-                pointAmount
-        );
-        paymentRepository.save(payment);
-
-        return payment.getId();
     }
 
     @Retryable(
