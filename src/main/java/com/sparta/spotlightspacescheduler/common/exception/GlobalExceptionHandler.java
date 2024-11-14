@@ -41,8 +41,7 @@ public class GlobalExceptionHandler {
         ErrorResponseDto errorResponseDto = ErrorResponseDto.of(statusCode, message);
 
         for (FieldError fieldError : exception.getBindingResult().getFieldErrors()) {
-            log.error("{} - {} : {}", exception.getClass().getSimpleName(), fieldError.getField(),
-                    fieldError.getDefaultMessage());
+            log.error("{} - {} : {}", exception.getClass().getSimpleName(), fieldError.getField(), fieldError.getDefaultMessage());
             errorResponseDto.addValidation(fieldError.getField(), fieldError.getDefaultMessage());
         }
 
@@ -60,8 +59,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ErrorResponseDto> handleMissingServletRequestParameterException(
-            MissingServletRequestParameterException exception) {
+    public ResponseEntity<ErrorResponseDto> handleMissingServletRequestParameterException(MissingServletRequestParameterException exception) {
         String exceptionMessage = String.format("%s는 필수 입력 항목입니다.", exception.getParameterName());
         log.error("{} - {}", exception.getClass().getSimpleName(), exceptionMessage);
 
@@ -74,6 +72,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponseDto> handleMaxSizeException(MaxUploadSizeExceededException exception) {
         return ResponseEntity.status(PAYLOAD_TOO_LARGE)
-                .body(ErrorResponseDto.of(PAYLOAD_TOO_LARGE.value(), "파일 크기가 5MB를 초과할 수 없습니다."));
+                .body(ErrorResponseDto.of(PAYLOAD_TOO_LARGE.value(),"파일 크기가 5MB를 초과할 수 없습니다."));
     }
 }

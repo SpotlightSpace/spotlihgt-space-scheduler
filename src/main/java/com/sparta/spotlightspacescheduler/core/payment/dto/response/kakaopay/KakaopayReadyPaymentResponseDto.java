@@ -1,4 +1,4 @@
-package com.sparta.spotlightspacescheduler.core.payment.dto.response;
+package com.sparta.spotlightspacescheduler.core.payment.dto.response.kakaopay;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class ReadyPaymentResponseDto {
+public class KakaopayReadyPaymentResponseDto implements TidAccessible {
 
     /**
      * 결제 고유 번호
