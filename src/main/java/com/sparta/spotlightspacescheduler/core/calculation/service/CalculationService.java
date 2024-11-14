@@ -6,6 +6,7 @@ import com.sparta.spotlightspacescheduler.core.calculation.domain.Calculation;
 import com.sparta.spotlightspacescheduler.core.calculation.repository.CalculationRepository;
 import com.sparta.spotlightspacescheduler.core.event.domain.Event;
 import com.sparta.spotlightspacescheduler.core.payment.domain.Payment;
+import com.sparta.spotlightspacescheduler.core.payment.domain.PaymentStatus;
 import com.sparta.spotlightspacescheduler.core.payment.repository.PaymentRepository;
 import com.sparta.spotlightspacescheduler.core.point.point.domain.Point;
 import com.sparta.spotlightspacescheduler.core.point.point.repository.PointRepository;

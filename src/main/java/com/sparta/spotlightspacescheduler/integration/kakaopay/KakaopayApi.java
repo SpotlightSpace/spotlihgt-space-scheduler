@@ -1,21 +1,31 @@
 package com.sparta.spotlightspacescheduler.integration.kakaopay;
 
+
+import static com.sparta.spotlightspacescheduler.common.exception.ErrorCode.JSON_PROCESSING_EXCEPTION;
 import static com.sparta.spotlightspacescheduler.core.payment.constant.PaymentConstant.APPROVAL_URL;
 import static com.sparta.spotlightspacescheduler.core.payment.constant.PaymentConstant.CANCEL_URL;
 import static com.sparta.spotlightspacescheduler.core.payment.constant.PaymentConstant.FAIL_URL;
 import static com.sparta.spotlightspacescheduler.core.payment.constant.PaymentConstant.PAYMENT_APPROVE_URL;
 import static com.sparta.spotlightspacescheduler.core.payment.constant.PaymentConstant.PAYMENT_CANCEL_URL;
 import static com.sparta.spotlightspacescheduler.core.payment.constant.PaymentConstant.PAYMENT_READY_URL;
+import static com.sparta.spotlightspacescheduler.core.payment.constant.PaymentConstant.PAYMENT_STATUS_URL;
 
-import com.sparta.spotlightspacescheduler.core.payment.dto.response.ApprovePaymentResponseDto;
-import com.sparta.spotlightspacescheduler.core.payment.dto.response.CancelPaymentResponseDto;
-import com.sparta.spotlightspacescheduler.core.payment.dto.response.ReadyPaymentResponseDto;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sparta.spotlightspacescheduler.common.exception.ApplicationException;
+import com.sparta.spotlightspacescheduler.core.payment.dto.response.kakaopay.KakaopayApprovePaymentResponseDto;
+import com.sparta.spotlightspacescheduler.core.payment.dto.response.kakaopay.KakaopayCancelPaymentResponseDto;
+import com.sparta.spotlightspacescheduler.core.payment.dto.response.kakaopay.KakaopayPaymentErrorResponseDto;
+import com.sparta.spotlightspacescheduler.core.payment.dto.response.kakaopay.KakaopayPaymentResponseDto;
+import com.sparta.spotlightspacescheduler.core.payment.dto.response.kakaopay.KakaopayPaymentStatusResponseDto;
+import com.sparta.spotlightspacescheduler.core.payment.dto.response.kakaopay.KakaopayReadyPaymentResponseDto;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -26,11 +36,12 @@ public class KakaopayApi {
     private static final String SECRET_KEY_PREFIX = "SECRET_KEY ";
 
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
     @Value("${payment.kakao.secret.key}")
     private String secretKey;
 
-    public ReadyPaymentResponseDto readyPayment(
+    public KakaopayPaymentResponseDto readyPayment(
             String cid,
             long partnerOrderId,
             long userId,
@@ -47,16 +58,32 @@ public class KakaopayApi {
                 totalPrice
         );
 
-        ReadyPaymentResponseDto responseDto = restTemplate.postForObject(
+        ResponseEntity<String> responseEntity = restTemplate.postForEntity(
                 PAYMENT_READY_URL,
                 new HttpEntity<>(parameters, getHeaders()),
-                ReadyPaymentResponseDto.class
+                String.class
         );
+
+        KakaopayPaymentResponseDto responseDto = null;
+        try {
+            if (responseEntity.getStatusCode().is2xxSuccessful()) {
+                responseDto = KakaopayPaymentResponseDto.ofSuccess(
+                        objectMapper.readValue(responseEntity.getBody(), KakaopayReadyPaymentResponseDto.class)
+                );
+            } else if (responseEntity.getStatusCode().is4xxClientError() || responseEntity.getStatusCode()
+                    .is5xxServerError()) {
+                responseDto = KakaopayPaymentResponseDto.ofFail(
+                        objectMapper.readValue(responseEntity.getBody(), KakaopayPaymentErrorResponseDto.class)
+                );
+            }
+        } catch (JsonProcessingException e) {
+            throw new ApplicationException(JSON_PROCESSING_EXCEPTION);
+        }
 
         return responseDto;
     }
 
-    public ApprovePaymentResponseDto approvePayment(
+    public KakaopayPaymentResponseDto approvePayment(
             String pgToken,
             String tid,
             String cid,
@@ -65,24 +92,74 @@ public class KakaopayApi {
     ) {
         Map<String, String> parameters = getParametersForApprovePayment(pgToken, cid, tid, paymentId, userId);
 
-        ApprovePaymentResponseDto responseDto = restTemplate.postForObject(
+        ResponseEntity<String> responseEntity = restTemplate.postForEntity(
                 PAYMENT_APPROVE_URL,
                 new HttpEntity<>(parameters, getHeaders()),
-                ApprovePaymentResponseDto.class
+                String.class
         );
+
+        KakaopayPaymentResponseDto responseDto = null;
+        try {
+            if (responseEntity.getStatusCode().is2xxSuccessful()) {
+                responseDto = KakaopayPaymentResponseDto.ofSuccess(
+                        objectMapper.readValue(responseEntity.getBody(), KakaopayApprovePaymentResponseDto.class)
+                );
+            } else if (responseEntity.getStatusCode().is4xxClientError() || responseEntity.getStatusCode()
+                    .is5xxServerError()) {
+                responseDto = KakaopayPaymentResponseDto.ofFail(
+                        objectMapper.readValue(responseEntity.getBody(), KakaopayPaymentErrorResponseDto.class)
+                );
+            }
+        } catch (JsonProcessingException e) {
+            throw new ApplicationException(JSON_PROCESSING_EXCEPTION);
+        }
 
         return responseDto;
     }
 
-    public CancelPaymentResponseDto cancelPayment(String cid, String tid, int cancelAmount, int cancelTaxFreeAmount) {
+    public KakaopayPaymentResponseDto cancelPayment(String cid, String tid, int cancelAmount, int cancelTaxFreeAmount) {
         Map<String, String> parameters = getParametersForCancelPayment(cid, tid, cancelAmount, cancelTaxFreeAmount);
 
-        CancelPaymentResponseDto responseDto = restTemplate.postForObject(
+        ResponseEntity<String> responseEntity = restTemplate.postForEntity(
                 PAYMENT_CANCEL_URL,
                 new HttpEntity<>(parameters, getHeaders()),
-                CancelPaymentResponseDto.class);
+                String.class
+        );
+
+        KakaopayPaymentResponseDto responseDto = null;
+        try {
+            if (responseEntity.getStatusCode().is2xxSuccessful()) {
+                responseDto = KakaopayPaymentResponseDto.ofSuccess(
+                        objectMapper.readValue(responseEntity.getBody(), KakaopayCancelPaymentResponseDto.class)
+                );
+            } else if (responseEntity.getStatusCode().is4xxClientError() || responseEntity.getStatusCode()
+                    .is5xxServerError()) {
+                responseDto = KakaopayPaymentResponseDto.ofFail(
+                        objectMapper.readValue(responseEntity.getBody(), KakaopayPaymentErrorResponseDto.class)
+                );
+            }
+        } catch (JsonProcessingException e) {
+            throw new ApplicationException(JSON_PROCESSING_EXCEPTION);
+        }
 
         return responseDto;
+    }
+
+    public KakaopayPaymentStatusResponseDto getPaymentStatus(String cid, String tid) {
+        Map<String, String> parameters = getParametersForGetPaymentStatus(cid, tid);
+        KakaopayPaymentStatusResponseDto responseDto = restTemplate.postForObject(
+                PAYMENT_STATUS_URL,
+                new HttpEntity<>(parameters, getHeaders()),
+                KakaopayPaymentStatusResponseDto.class);
+
+        return responseDto;
+    }
+
+    private Map<String, String> getParametersForGetPaymentStatus(String cid, String tid) {
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("cid", cid);
+        parameters.put("tid", tid);
+        return parameters;
     }
 
     private Map<String, String> getParametersForReadyPayment(
