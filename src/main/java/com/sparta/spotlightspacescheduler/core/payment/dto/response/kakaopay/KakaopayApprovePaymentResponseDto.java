@@ -1,34 +1,35 @@
-package com.sparta.spotlightspacescheduler.core.payment.dto.response;
+package com.sparta.spotlightspacescheduler.core.payment.dto.response.kakaopay;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class ApprovePaymentResponseDto {
+public class KakaopayApprovePaymentResponseDto implements TidAccessible {
 
     /**
      * 요청 고유 번호 - 승인/취소가 구분된 결제번호
      */
-    private String aid;
+    private final String aid;
 
     /**
      * 결제 고유 번호 - 승인/취소가 동일한 결제번호
      */
-    private String tid;
+    private final String tid;
 
     /**
      * 가맹점 코드
      */
-    private String cid;
+    private final String cid;
 
     /**
      * 정기 결제용 ID, 정기 결제 CID로 단건 결제 요청 시 발급
      */
-    private String sid;
+    private final String sid;
 
     /**
      * 가맹점 주문번호
@@ -73,12 +74,12 @@ public class ApprovePaymentResponseDto {
     /**
      * 결제 준비 요청 시각
      */
-    private final String createdAt;
+    private final LocalDateTime createdAt;
 
     /**
      * 결제 승인 시각
      */
-    private final String approvedAt;
+    private final LocalDateTime approvedAt;
 
     /**
      * 결제 승인 요청에 대해 저장한 값, 요청 시 전달된 내용
@@ -177,7 +178,7 @@ public class ApprovePaymentResponseDto {
         private final String interestFreeInstall;
 
         /**
-         * 할부 유형(24.02.01일부터 제공) - CARD_INSTALLMENT: 업종 무이자 - SHARE_INSTALLMENT: 분담 무이자
+         * 할부 유형 - CARD_INSTALLMENT: 업종 무이자 - SHARE_INSTALLMENT: 분담 무이자
          */
         private final String installmentType;
 
