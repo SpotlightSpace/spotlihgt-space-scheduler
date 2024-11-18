@@ -21,6 +21,11 @@ spring:
         highlight_sql: false
         show_sql: false
         format_sql: false
+        jdbc:
+          batch_size: 30
+        order_updates: true
+        order_inserts: true
+
   config:
     import: optional:file:.env[.properties]
   servlet:
