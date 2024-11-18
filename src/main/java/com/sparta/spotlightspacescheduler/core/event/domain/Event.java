@@ -90,4 +90,24 @@ public class Event extends Timestamped {
     public void calculate() {
         this.isCalculated = true;
     }
+
+    private Event(Long id, LocalDateTime startAt, LocalDateTime endAt, int price, LocalDateTime recruitmentStartAt,
+            LocalDateTime recruitmentFinishAt, boolean isDeleted, boolean isCalculated, User user) {
+        this.id = id;
+        this.startAt = startAt;
+        this.endAt = endAt;
+        this.price = price;
+        this.recruitmentStartAt = recruitmentStartAt;
+        this.recruitmentFinishAt = recruitmentFinishAt;
+        this.isDeleted = isDeleted;
+        this.isCalculated = isCalculated;
+        this.user = user;
+    }
+
+    public static Event create(Long id, LocalDateTime startAt, LocalDateTime endAt, int price,
+            LocalDateTime recruitmentStartAt, LocalDateTime recruitmentFinishAt, boolean isDeleted,
+            boolean isCalculated, User user) {
+        return new Event(id, startAt, endAt, price, recruitmentStartAt, recruitmentFinishAt, isDeleted, isCalculated,
+                user);
+    }
 }

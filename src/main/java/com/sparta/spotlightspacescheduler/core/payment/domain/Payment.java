@@ -2,7 +2,6 @@ package com.sparta.spotlightspacescheduler.core.payment.domain;
 
 import static com.sparta.spotlightspacescheduler.core.payment.domain.PaymentStatus.APPROVED;
 import static com.sparta.spotlightspacescheduler.core.payment.domain.PaymentStatus.CANCELED;
-import static com.sparta.spotlightspacescheduler.core.payment.domain.PaymentStatus.PENDING;
 import static com.sparta.spotlightspacescheduler.core.payment.domain.PaymentStatus.READY;
 
 import com.sparta.spotlightspacescheduler.common.entity.Timestamped;
@@ -73,10 +72,8 @@ public class Payment extends Timestamped {
             Event event,
             User user,
             int originalAmount,
-            int discountedAmount,
             UserCoupon userCoupon,
             Point point,
-            int pointAmount,
             PaymentStatus status
     ) {
         this.tid = tid;
@@ -84,25 +81,22 @@ public class Payment extends Timestamped {
         this.event = event;
         this.user = user;
         this.originalAmount = originalAmount;
-        this.discountedAmount = discountedAmount;
         this.userCoupon = userCoupon;
         this.point = point;
-        this.usedPointAmount = pointAmount;
         this.status = status;
     }
 
     public static Payment create(
+            String tid,
             String cid,
             Event event,
             User user,
             int originalAmount,
-            int discountedAmount,
             UserCoupon userCoupon,
-            Point point,
-            int pointAmount
+            Point point
     ) {
-        return new Payment(null, cid, event, user, originalAmount, discountedAmount, userCoupon, point, pointAmount,
-                PENDING);
+        return new Payment(tid, cid, event, user, originalAmount, userCoupon, point,
+                APPROVED);
     }
 
     public void approve() {
