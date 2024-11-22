@@ -1,4 +1,4 @@
-package com.sparta.spotlightspacescheduler.core.calculation.service;
+package com.sparta.spotlightspacescheduler.core.calculation.batch;
 
 
 import com.sparta.spotlightspacescheduler.core.event.domain.Event;
