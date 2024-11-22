@@ -1,4 +1,4 @@
-package com.sparta.spotlightspacescheduler.core.calculation.service;
+package com.sparta.spotlightspacescheduler.core.calculation.batch;
 
 import com.sparta.spotlightspacescheduler.core.calculation.dto.CalculationProcessResponseDto;
 import com.sparta.spotlightspacescheduler.core.event.domain.Event;
@@ -29,7 +29,6 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.dao.TransientDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.retry.RetryPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
